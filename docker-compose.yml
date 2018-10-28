@@ -25,7 +25,7 @@ services:
       context: server
       args:
         - SHA
-    user: root
+    user: runner
     image: cyberdojo/runner-stateless
     init: true
     container_name: test-runner-stateless-server
