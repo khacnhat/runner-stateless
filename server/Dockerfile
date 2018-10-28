@@ -2,74 +2,39 @@ FROM  cyberdojo/docker-base
 LABEL maintainer=jon@jaggersoft.com
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Old comment...
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# 3. lib/runner sh files needs to run /usr/bin/docker
-# after this, the sh file (running as cyber-dojo user) can do
-#     $ sudo -u docker-runner sudo docker run ...
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Ok so I think this was when cyber-dojo was a docker-image monolith
-# and ran as a user called cyber-dojo.
-# The commands below created a new user called docker-runner
-# which the cyber-dojo could sudo as.
-# The docker-runner user had rights to the docker binary.
-# Now the runner is a separate service it can have its own user
-# and that can be granted rights to the docker binary directly...
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Currently getting a failure with
-# chown 41966:51966 /tmp/452..324/sandbox
-# which is because the user is now the runner user...
-# Hmmmmm. Is there a cheat here.
-# Could I make the uid of runner the same as the uid of sandbox...?
-# This might mean I could drop chmod/chown commands
-# as that would be what they get anyway...
-# Reasonable approach just to see if docker command actually run...
-# That indeed got me further...
-# But now getting.
-# /var/run/docker.sock: connect: permission denied
-#
-# Could I make runner be a member of docker group?
-# And also sandbox group?
+# Inside runner.rb I chown files to the sandbox user/group
+# I'm setting runner's uid:gid to the _same_ as the sandbox user
+# (inside the container runner runs) otherwise the chown gets
+# a permission denied error.
+# Possible that with this change I don't need to do the chown at all.
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 USER root
 
-# On DockerToolbox for Mac, on the default VM
-# /etc/group has docker group with gid=100
-# This means /var/run/docker.sock has a gid=100
-# On an Alpine image (such as this), /etc/group
-# has a group called users with gid=100
-# There is also a user called guest that has
-# the group users as its primary group.
-# So I need to delete the user called guest, and the
-# group called users, so that I can create a new group
-# with a gid of 100. Then I can make my user
-# a member of this group, and after all that,
-# my user will have access to /var/run/docker.sock
-# Obvious problem with this is that the docker group
-# has different gids on different OS's.
-# For example, on Ubuntu 16.04 (in Google Computer Engine)
-# /etc/group also has a group called users with gid=100
-# but its docker group has a gid of 999
-
-RUN deluser guest
-RUN delgroup users
-RUN addgroup -g 100 docker
+RUN addgroup -g 51966 runner
 
 RUN adduser \
-  -G docker `# group`       \
+  -G runner `# group`       \
   -D        `# no password` \
   -H        `# no home dir` \
   -u 41966  `# user-id`     \
   runner    `# user-name`
 
-# I tar-pipe files into the sandbox dir
-# These need to be owned by the sandbox user.
-# So I need to chmod the files before tar-piping them.
-# And I think I also need to run the tar command as root.
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# On DockerToolbox for Mac, on the default VM
+# /etc/group has docker group with gid=100
+# This means /var/run/docker.sock has a gid=100
+# On an Alpine image (such as this), /etc/group
+# has a group called users with gid=100
+# So if I make my user a member of this group, then
+# my user will have access to /var/run/docker.sock
+# Obvious problem with this approach is that the docker
+# group has different gids on different OS's.
+# For example, on Ubuntu 16.04 (in Google Computer Engine)
+# /etc/group has a docker group with a gid of 999
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-RUN addgroup -g 51966 runner
-RUN adduser runner runner
+RUN adduser runner users
 
 
 ARG HOME=/app
