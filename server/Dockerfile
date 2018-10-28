@@ -71,26 +71,6 @@ RUN adduser \
 RUN addgroup -g 51966 runner
 RUN adduser runner runner
 
-# there is no sudo command in default Alpine
-RUN  apk --update add sudo
-
-ARG  DOCKER_BINARY=/usr/local/bin/docker
-
-ARG  GETS_DOCKER_SUDO=runner
-ARG  SUDO_FILE=/etc/sudoers.d/${GETS_DOCKER_SUDO}
-# runner user, on all hosts, without a password, can sudo /usr/local/bin/docker
-RUN echo "${GETS_DOCKER_SUDO}  ALL=NOPASSWD: ${DOCKER_BINARY} *" >> ${SUDO_FILE}
-
-
-# -----------------------------------------
-# DEAD
-# -D=no password, -H=no home directory
-#RUN  adduser -D -H ${GETS_DOCKER_SUDO}
-#ARG  NEEDS_DOCKER_SUDO=cyber-dojo
-# cyber-dojo, on all hosts, can sudo -u docker-runner, without a password
-#RUN  echo "${NEEDS_DOCKER_SUDO} ALL=(${GETS_DOCKER_SUDO}) NOPASSWD: ALL" >  ${SUDO_FILE}
-# -----------------------------------------
-
 
 ARG HOME=/app
 COPY . ${HOME}
