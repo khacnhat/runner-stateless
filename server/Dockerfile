@@ -67,7 +67,6 @@ RUN adduser \
 # These need to be owned by the sandbox user.
 # So I need to chmod the files before tar-piping them.
 # And I think I also need to run the tar command as root.
-# This all appears to work, but everything is running _much_ slower.
 
 RUN addgroup -g 51966 runner
 RUN adduser runner runner
