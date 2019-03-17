@@ -26,7 +26,7 @@ services:
       args:
         - SHA
     user: root
-    image: cyberdojo/runner-stateless
+    image: khacnhat/runner-dojo
     init: true
     container_name: test-runner-stateless-server
     ports:
